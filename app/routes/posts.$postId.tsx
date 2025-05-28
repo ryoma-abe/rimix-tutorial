@@ -1,4 +1,5 @@
-import { json, LoaderFunctionArgs, useLoaderData } from "react-router";
+import { json, type LoaderFunctionArgs } from "@remix-run/node";
+import { useLoaderData } from "@remix-run/react";
 
 export const loader = async ({ params }: LoaderFunctionArgs) => {
   const response = await fetch(
