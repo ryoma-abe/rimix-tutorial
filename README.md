@@ -1,103 +1,118 @@
-# Remix の基本学習まとめ
+# Remix 基本文法まとめ
 
 ## ✅ Outlet（アウトレット）
 
-- 親ルート内で子ルートを**どこに表示するか**を指定するコンポーネント。
-- ネストされたレイアウトに対応。
-- 使用例：
+- 親ルートの中で**子ルートを表示する場所**を指定するコンポーネント。
+- ネストされたルート構造で、共通レイアウトに動的に内容を差し込む用途に使われる。
 
-  ```tsx
-  import { Outlet } from "@remix-run/react";
+```tsx
+import { Outlet } from "@remix-run/react";
 
-  export default function Layout() {
-    return (
-      <div>
-        <h1>共通レイアウト</h1>
-        <Outlet />
-      </div>
-    );
-  }
-  ```
+export default function Layout() {
+  return (
+    <div>
+      <h1>レイアウト</h1>
+      <Outlet />
+    </div>
+  );
+}
 ````
 
 ---
 
 ## ✅ メタデータ（meta）
 
-- HTML の`<head>`に入る**タイトルや説明**などの情報を指定。
-- SEO や SNS での表示に重要。
-- 使用例：
+* HTMLの `<head>` に含まれる情報（タイトル・説明など）を設定する関数。
+* SEOやSNSシェア時に利用される。
 
-  ```ts
-  import type { MetaFunction } from "@remix-run/node";
+```ts
+import type { MetaFunction } from "@remix-run/node";
 
-  export const meta: MetaFunction = () => [
+export const meta: MetaFunction = () => {
+  return [
     { title: "New Remix App" },
     { name: "description", content: "Welcome to Remix!" },
   ];
-  ```
+};
+```
 
 ---
 
 ## ✅ ローダー（loader）
 
-- ページ描画前に**サーバー側でデータを取得**する関数。
-- SSR（サーバーサイドレンダリング）に対応。
-- 使用例：
+* ページの表示時に**サーバーで実行されるデータ取得関数**。
+* クライアントでは `useLoaderData()` を使って値を受け取る。
 
-  ```ts
-  import { json } from "@remix-run/node";
-  import { useLoaderData } from "@remix-run/react";
+```ts
+import { json } from "@remix-run/node";
+import { useLoaderData } from "@remix-run/react";
 
-  export const loader = async () => {
-    const res = await fetch("https://api.example.com/posts");
-    const posts = await res.json();
-    return json({ posts });
-  };
+export const loader = async () => {
+  const res = await fetch("https://jsonplaceholder.typicode.com/posts?_limit=5");
+  const posts = await res.json();
+  return json({ posts });
+};
 
-  export default function Posts() {
-    const { posts } = useLoaderData<typeof loader>();
-    return (
-      <ul>
-        {posts.map((p) => (
-          <li key={p.id}>{p.title}</li>
-        ))}
-      </ul>
-    );
-  }
-  ```
+export default function Index() {
+  const { posts } = useLoaderData<typeof loader>();
+  return (
+    <ul>
+      {posts.map(post => (
+        <li key={post.id}>{post.title}</li>
+      ))}
+    </ul>
+  );
+}
+```
 
 ---
 
 ## ✅ ダイナミックセグメント
 
-- URL の可変部分をルートファイル名で定義（例：`$postId`）。
+* ルーティングで**動的に変わるパスの値**を扱う仕組み。
+* ファイル名に `$` をつけることでその部分がパラメータとして認識される。
 
-- 使用例：
+```bash
+app/routes/posts.$postId.tsx
+```
 
-  ```bash
-  app/routes/post.$postId.tsx
-  ```
+```ts
+import { useParams } from "@remix-run/react";
 
-- `/post/123` にアクセスすると、`useParams().postId` で `"123"` を取得できる。
+export default function Post() {
+  const { postId } = useParams();
+  return <p>記事ID: {postId}</p>;
+}
+```
 
 ---
 
 ## ✅ アクション（action）
 
-- フォーム送信時の**サーバー側処理**を行う関数。
-- データの保存・バリデーション・リダイレクト処理などに使用。
-- 使用例：
+* フォームなどから送られたデータを**サーバー側で処理する関数**。
+* `request.formData()` を使ってフォームデータを取得し、保存やリダイレクト処理が可能。
 
-  ```ts
-  import { redirect } from "@remix-run/react";
-  import type { ActionFunctionArgs } from "@remix-run/node";
+```tsx
+import { redirect } from "@remix-run/node";
+import type { ActionFunctionArgs } from "@remix-run/node";
+import { Form } from "@remix-run/react";
 
-  export const action = async ({ request }: ActionFunctionArgs) => {
-    const formData = await request.formData();
-    const title = formData.get("title");
-    const body = formData.get("body");
-    console.log(title, body);
-    return redirect("/");
-  };
-  ```
+export const action = async ({ request }: ActionFunctionArgs) => {
+  const formData = await request.formData();
+  const title = formData.get("title");
+  const body = formData.get("body");
+  console.log(title, body);
+  return redirect("/");
+};
+
+export default function NewPost() {
+  return (
+    <Form method="post">
+      <input type="text" name="title" placeholder="タイトル" />
+      <textarea name="body" placeholder="本文"></textarea>
+      <button type="submit">作成</button>
+    </Form>
+  );
+}
+```
+
